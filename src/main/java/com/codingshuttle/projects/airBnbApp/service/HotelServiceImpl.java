@@ -49,6 +49,7 @@ public class HotelServiceImpl implements HotelService{
         return  modelMapper.map(hotel,HotelDto.class);
     }
 
+
     @Override
     public Boolean deleteHotelById(Long id) {
         log.info("delete the hotel with ID: {} ", id);
@@ -59,4 +60,17 @@ public class HotelServiceImpl implements HotelService{
      //delete the future inventory for this hotel
         return  true;
     }
+
+    @Override
+    public void activateHotel(Long hotelId) {
+        log.info("Activating the hotel with ID: {}",hotelId);
+        Hotel hotel = hotelRepository.findById(hotelId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hotel not found"+hotelId));
+        hotel.setActive(true);
+        //TODO : Create inventory for all rooms for the hotel
+    }
+
+
+
 }
