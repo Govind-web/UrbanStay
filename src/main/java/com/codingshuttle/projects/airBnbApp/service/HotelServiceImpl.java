@@ -2,6 +2,7 @@ package com.codingshuttle.projects.airBnbApp.service;
 
 import com.codingshuttle.projects.airBnbApp.dto.HotelDto;
 import com.codingshuttle.projects.airBnbApp.entity.Hotel;
+import com.codingshuttle.projects.airBnbApp.entity.Room;
 import com.codingshuttle.projects.airBnbApp.exception.ResourceNotFoundException;
 import com.codingshuttle.projects.airBnbApp.repository.HotelRepository;
 import jakarta.transaction.Transactional;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class HotelServiceImpl implements HotelService{
     private final HotelRepository hotelRepository;
     private final ModelMapper modelMapper;
+    private final InventoryService inventoryService;
     @Override
     public HotelDto createNewHotel(HotelDto hotelDto){
         log.info("Creating a new hotel with name : {}",hotelDto.getName());
@@ -51,17 +53,21 @@ public class HotelServiceImpl implements HotelService{
 
 
     @Override
-    public Boolean deleteHotelById(Long id) {
+    @Transactional
+    public void deleteHotelById(Long id) {
         log.info("delete the hotel with ID: {} ", id);
-        boolean exists = hotelRepository.existsById(id);
-        if (!exists)
-            throw new ResourceNotFoundException("Hotel not found with ID " + id);
-     hotelRepository.deleteById(id);
-     //delete the future inventory for this hotel
-        return  true;
+        Hotel hotel = hotelRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hotel not found with id "+id));
+        hotelRepository.deleteById(id);
+        for (Room room:hotel.getRooms()){
+            inventoryService.deleteFutureInventories(room);
+        }
+        //delete the future inventory for this hote
     }
 
     @Override
+    @Transactional
     public void activateHotel(Long hotelId) {
         log.info("Activating the hotel with ID: {}",hotelId);
         Hotel hotel = hotelRepository.findById(hotelId)
@@ -69,6 +75,9 @@ public class HotelServiceImpl implements HotelService{
                         new ResourceNotFoundException("Hotel not found"+hotelId));
         hotel.setActive(true);
         //TODO : Create inventory for all rooms for the hotel
+        for (Room room:hotel.getRooms()){
+            inventoryService.initializeRoomForYear(room);
+        }
     }
 
 
