@@ -1,6 +1,7 @@
 package com.codingshuttle.projects.airBnbApp.service;
 
 import com.codingshuttle.projects.airBnbApp.dto.HotelDto;
+import com.codingshuttle.projects.airBnbApp.dto.HotelInfoDto;
 import com.codingshuttle.projects.airBnbApp.entity.Hotel;
 import org.springframework.stereotype.Service;
 
@@ -13,4 +14,6 @@ public interface HotelService  {
     void deleteHotelById(Long id);
 
     void activateHotel(Long hotelId);
+    HotelInfoDto getHotelInfoById(Long hotelId);
+
 }
