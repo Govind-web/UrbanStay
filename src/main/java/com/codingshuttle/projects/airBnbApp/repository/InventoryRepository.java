@@ -53,4 +53,5 @@ List<Inventory> findAndLockAvailableInventory(
 );
 
 
+    List<Inventory> findByHotelAndDateBetween(Hotel hotel, LocalDate startDate, LocalDate endDate);
 }
