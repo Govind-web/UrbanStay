@@ -17,26 +17,71 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class WebSecurityConfig {
+
     private final JWTAuthFilter jwtAuthFilter;
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity){
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity httpSecurity
+    ) throws Exception {
+
         httpSecurity
-                .csrf(csrfConfig->csrfConfig.disable())
-                .sessionManagement(sessionConfig->sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(auth->auth
-                        .requestMatchers("/admin/**").hasRole("Hotel_MANAGER")
-                        .requestMatchers("/bookings/**").authenticated()
-                        .anyRequest().permitAll()
+                // JWT based API -> CSRF disabled
+                .csrf(csrf -> csrf.disable())
+
+                // H2 console needs iframe support
+                .headers(headers -> headers
+                        .frameOptions(frameOptions ->
+                                frameOptions.sameOrigin()
+                        )
+                )
+
+                // No HTTP session
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
+                // JWT filter executes before Spring's
+                // UsernamePasswordAuthenticationFilter
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+
+                .authorizeHttpRequests(auth -> auth
+
+                        // H2 console
+                        .requestMatchers("/h2/**")
+                        .permitAll()
+
+                        // Hotel manager APIs
+                        .requestMatchers("/admin/**")
+                        .hasRole("HOTEL_MANAGER")
+
+                        // Booking APIs
+                        .requestMatchers("/bookings/**")
+                        .authenticated()
+
+                        // Login, signup and other public APIs
+                        .anyRequest()
+                        .permitAll()
                 );
+
         return httpSecurity.build();
     }
+
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
     @Bean
-    AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception{
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration configuration
+    ) throws Exception {
+
         return configuration.getAuthenticationManager();
     }
 }

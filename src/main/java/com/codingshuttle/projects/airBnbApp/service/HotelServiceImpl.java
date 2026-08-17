@@ -5,13 +5,16 @@ import com.codingshuttle.projects.airBnbApp.dto.HotelInfoDto;
 import com.codingshuttle.projects.airBnbApp.dto.RoomDto;
 import com.codingshuttle.projects.airBnbApp.entity.Hotel;
 import com.codingshuttle.projects.airBnbApp.entity.Room;
+import com.codingshuttle.projects.airBnbApp.entity.User;
 import com.codingshuttle.projects.airBnbApp.exception.ResourceNotFoundException;
+import com.codingshuttle.projects.airBnbApp.exception.UnAuthorisedException;
 import com.codingshuttle.projects.airBnbApp.repository.HotelRepository;
 import com.codingshuttle.projects.airBnbApp.repository.RoomRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,6 +32,9 @@ public class HotelServiceImpl implements HotelService{
         log.info("Creating a new hotel with name : {}",hotelDto.getName());
         Hotel hotel=modelMapper.map(hotelDto,Hotel.class);
         hotel.setActive(false);
+        User user= (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        hotel.setOwner(user);
+
         hotel=hotelRepository.save(hotel);
         log.info("created a new hotel with name : { }"+hotelDto.getId());
         return modelMapper.map(hotel,HotelDto.class);
@@ -40,7 +46,10 @@ public class HotelServiceImpl implements HotelService{
         Hotel hotel = hotelRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Hotel not found"));
-
+        User user= (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())){
+            throw new UnAuthorisedException("Booking does not belong to this user");
+        }
         return modelMapper.map(hotel, HotelDto.class);
     }
 
